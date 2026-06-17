@@ -404,7 +404,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD AND NOT GAMMARAY_PROBE_ONLY_BUILD)
         Qt::Gui
     )
 
-    if(GAMMARAY_BUILD_UI)
+    if(TARGET gammaray_launcher_ui)
         gammaray_add_test(launcheruiiptest launcheruiiptest.cpp)
         target_link_libraries(
             launcheruiiptest
@@ -566,8 +566,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
             quickmaterialtest quickmaterialtest.cpp quickinspectortest.qrc $<TARGET_OBJECTS:modeltestobj>
         )
         if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-            find_package(Qt6ShaderTools)
-            if(Qt6ShaderTools_FOUND)
+            if(TARGET Qt6::ShaderTools)
                 qt6_add_shaders(
                     quicktexturetest
                     "quicktexturetest_shaders"

@@ -14,6 +14,36 @@
             }
         },
         {
+            "name": "conan-base",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "GAMMARAY_BUILD_DOCS": "OFF",
+                "GAMMARAY_BUILD_KJOBTRACKER": "OFF",
+                "GAMMARAY_MULTI_BUILD": "OFF"
+            }
+        },
+        {
+            "name": "conan-debug",
+            "displayName": "conan-debug",
+            "inherits": [ "conan-base" ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "GAMMARAY_BUILD_UI": "ON",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/out/conan/x64-debug/conan_toolchain.cmake"
+            }
+        },
+        {
+            "name": "conan-relwithdebinfo",
+            "displayName": "conan-relwithdebinfo",
+            "inherits": [ "conan-base" ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "GAMMARAY_BUILD_UI": "ON",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/out/conan/x64-relwithdebinfo/conan_toolchain.cmake"
+            }
+        },
+        {
             "name": "dev",
             "inherits": "base",
             "displayName": "dev",
@@ -162,6 +192,20 @@
         {
             "name": "dev-gammaray",
             "configurePreset": "dev",
+            "targets": [
+                "all"
+            ]
+        },
+        {
+            "name": "conan-debug",
+            "configurePreset": "conan-debug",
+            "targets": [
+                "all"
+            ]
+        },
+        {
+            "name": "conan-relwithdebinfo",
+            "configurePreset": "conan-relwithdebinfo",
             "targets": [
                 "all"
             ]

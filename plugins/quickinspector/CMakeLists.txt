@@ -87,6 +87,9 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         Qt::QuickPrivate
         gammaray_kitemmodels
     )
+    if(NOT QT_NO_OPENGL AND TARGET Qt::OpenGL)
+        target_link_libraries(gammaray_quickinspector Qt::OpenGL)
+    endif()
 
     if(TARGET Qt::Gui_GLESv2)
         include(CheckCXXSourceCompiles)
@@ -156,5 +159,8 @@ if(GAMMARAY_BUILD_UI)
     )
 
     target_link_libraries(gammaray_quickinspector_ui gammaray_quickinspector_shared gammaray_ui Qt::Quick)
+    if(NOT QT_NO_OPENGL AND TARGET Qt::OpenGL)
+        target_link_libraries(gammaray_quickinspector_ui Qt::OpenGL)
+    endif()
 
 endif()

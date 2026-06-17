@@ -1,0 +1,14 @@
+{
+ "remotes": [
+  {
+   "name": "conancenter",
+   "url": "https://center2.conan.io",
+   "verify_ssl": true
+  },
+  {
+   "name": "gitlab-conan2",
+   "url": "http://172.16.2.202:9300",
+   "verify_ssl": true
+  }
+ ]
+}

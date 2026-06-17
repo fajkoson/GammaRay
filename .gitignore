@@ -21,3 +21,9 @@ perf.data*
 # ts generation
 translations/plugin_meta_data.cpp
 build*/
+
+# local Visual Studio / Conan build artifacts
+.env/
+.vs/
+out/
+

@@ -68,6 +68,10 @@
 #  Enable State Machine Viewer Plugin UI by requiring KDAB State Machine Editor
 #  Default=false
 #
+# -DGAMMARAY_BUILD_KJOBTRACKER=[true|false]
+#  Build the KJob tracker plug-in.
+#  Default=true
+#
 # -DENABLE_GOLD_LINKER=[true|false]
 #  Use GNU gold linker
 #  Default=false
@@ -262,6 +266,7 @@ gammaray_option(GAMMARAY_INSTALL_QT_LAYOUT "Install into Qt directory layout." O
 gammaray_option(GAMMARAY_MULTI_BUILD "Build multiple applicable probe configurations." ON)
 gammaray_option(GAMMARAY_BUILD_CLI_INJECTOR "Build command line injector on Windows." ON)
 gammaray_option(GAMMARAY_WITH_KDSME "Enable State Machine UI with KDSME" OFF)
+gammaray_option(GAMMARAY_BUILD_KJOBTRACKER "Build the KJob tracker plug-in." ON)
 
 set(GAMMARAY_BUILD_DOCS_DEFAULT ON)
 set(GAMMARAY_DISABLE_FEEDBACK_DEFAULT OFF)
@@ -430,13 +435,28 @@ if(GAMMARAY_ENFORCE_QT_ASSERTS)
     add_definitions(-DQT_FORCE_ASSERTS)
 endif()
 
+set(QT_VERSION_MAJOR 6)
 if(NOT DEFINED QT_VERSION_MAJOR)
     set(QT_VERSION_MAJOR 6)
 endif()
 
+
 set_package_properties(Qt${QT_VERSION_MAJOR}Core PROPERTIES TYPE REQUIRED)
 
-find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS Gui Network)
+find_package(QT NAMES Qt6 CONFIG)
+find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS Gui Network Scxml)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    cmake_path(SET QT6_INSTALL_PREFIX NORMALIZE ${qt_PACKAGE_FOLDER_DEBUG})
+    cmake_path(SET _lrelease_folder NORMALIZE ${qt_Qt6_LinguistTools_BIN_DIRS_DEBUG})
+else()
+    cmake_path(SET QT6_INSTALL_PREFIX NORMALIZE ${qt_PACKAGE_FOLDER_RELWITHDEBINFO})
+    cmake_path(SET _lrelease_folder NORMALIZE ${qt_Qt6_LinguistTools_BIN_DIRS_RELWITHDEBINFO})
+endif()
+
+qt_policy(SET QTP0001 NEW)
+qt_policy(SET QTP0004 NEW)
+
 if(QT_VERSION_MAJOR EQUAL 6 AND Qt${QT_VERSION_MAJOR}Core_VERSION_MINOR LESS 5)
     message(FATAL_ERROR "Sorry, Qt6 less than version 6.5 is not supported since GammaRay 3.3")
 endif()
@@ -459,7 +479,9 @@ find_package(
         Qml
         Quick
         QuickWidgets
+        ShaderTools
         Svg
+        StateMachine
         Test
         WebEngineWidgets
         Widgets
@@ -468,25 +490,6 @@ find_package(
 
 if(ANDROID)
     find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS AndroidExtras)
-endif()
-
-# Find these 'exotic' Qt modules without using find_package(... COMPONENTS)
-# so we can retrieve those packages even when installed into a different prefix
-find_package(
-    Qt${QT_VERSION_MAJOR}Scxml
-    ${Qt${QT_VERSION_MAJOR}_VERSION}
-    EXACT
-    NO_MODULE
-    QUIET
-)
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    find_package(
-        Qt${QT_VERSION_MAJOR}StateMachine
-        ${Qt${QT_VERSION_MAJOR}_VERSION}
-        EXACT
-        NO_MODULE
-        QUIET
-    )
 endif()
 
 # if translation/doc host tools are missing, the Qt5 cmake config files throw errors...
@@ -524,16 +527,61 @@ if(GAMMARAY_BUILD_UI) # widgets are required for the UI
 endif()
 
 set(HAVE_QT_CONCURRENT ${QtConcurrent_FOUND})
+if(TARGET Qt::Concurrent OR TARGET Qt${QT_VERSION_MAJOR}::Concurrent)
+    set(HAVE_QT_CONCURRENT TRUE)
+endif()
 set(HAVE_QT_WIDGETS ${QtWidgets_FOUND})
 set(HAVE_QT_SVG ${QtSvg_FOUND})
 set(HAVE_QT_SCXML ${QtScxml_FOUND})
 set(HAVE_QT_DESIGNER ${QtDesigner_FOUND})
 
 if(TARGET Qt${QtGui_VERSION_MAJOR}::Gui)
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_LIBRARIES Qt${QtGui_VERSION_MAJOR}::Gui)
-    check_cxx_symbol_exists(QT_NO_OPENGL "QOpenGLContext" QT_NO_OPENGL)
-    cmake_pop_check_state()
+    set(QT_NO_OPENGL FALSE)
+    set(_gammaray_qtgui_config_file "")
+    set(_gammaray_qtgui_config_candidates)
+
+    if(QT${QT_VERSION_MAJOR}_INSTALL_PREFIX)
+        list(
+            APPEND
+            _gammaray_qtgui_config_candidates
+            "${QT${QT_VERSION_MAJOR}_INSTALL_PREFIX}/include/QtGui/qtgui-config.h"
+            "${QT${QT_VERSION_MAJOR}_INSTALL_PREFIX}/include/qtgui-config.h"
+        )
+    endif()
+
+    get_target_property(_gammaray_qtgui_include_dirs Qt${QtGui_VERSION_MAJOR}::Gui INTERFACE_INCLUDE_DIRECTORIES)
+    foreach(_gammaray_qtgui_include_dir IN LISTS _gammaray_qtgui_include_dirs)
+        string(GENEX_STRIP "${_gammaray_qtgui_include_dir}" _gammaray_qtgui_include_dir)
+        if(_gammaray_qtgui_include_dir)
+            list(
+                APPEND
+                _gammaray_qtgui_config_candidates
+                "${_gammaray_qtgui_include_dir}/qtgui-config.h"
+                "${_gammaray_qtgui_include_dir}/QtGui/qtgui-config.h"
+            )
+        endif()
+    endforeach()
+
+    foreach(_gammaray_qtgui_config_candidate IN LISTS _gammaray_qtgui_config_candidates)
+        if(EXISTS "${_gammaray_qtgui_config_candidate}")
+            set(_gammaray_qtgui_config_file "${_gammaray_qtgui_config_candidate}")
+            break()
+        endif()
+    endforeach()
+
+    if(_gammaray_qtgui_config_file)
+        file(
+            STRINGS "${_gammaray_qtgui_config_file}" _gammaray_qtgui_opengl_feature
+            REGEX "^#define[ \t]+QT_FEATURE_opengl[ \t]+-?[0-9]+"
+        )
+        if(_gammaray_qtgui_opengl_feature MATCHES "#define[ \t]+QT_FEATURE_opengl[ \t]+(-?[0-9]+)")
+            if(CMAKE_MATCH_1 LESS_EQUAL 0)
+                set(QT_NO_OPENGL TRUE)
+            endif()
+        endif()
+    elseif(NOT TARGET Qt::OpenGL AND NOT TARGET Qt${QT_VERSION_MAJOR}::OpenGL)
+        set(QT_NO_OPENGL TRUE)
+    endif()
 endif()
 
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x060500)
