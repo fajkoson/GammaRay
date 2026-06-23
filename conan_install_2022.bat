@@ -25,6 +25,14 @@ setx CONAN_HOME "%CONAN_HOME_DIR%" >NUL
 @echo Installing Conan configuration...
 "%VENV_DIR%\Scripts\conan.exe" config install tools\conan || goto CONAN_SETUP_FAILURE
 
+@echo Login
+if not defined CONAN_REMOTE_PASSWORD (
+    @echo FATAL ERROR: set CONAN_REMOTE_PASSWORD
+    if not defined PIPELINE_MODE pause
+    exit /b 1
+)
+"%VENV_DIR%\Scripts\conan.exe" remote login gitlab-conan2 access-token-read -p "%CONAN_REMOTE_PASSWORD%" || goto CONAN_SETUP_FAILURE
+
 @echo Installing Release and Debug dependencies...
 "%VENV_DIR%\Scripts\conan.exe" install . --output-folder=out -pr:a %CONAN_PROFILE_NAME% -s:a build_type=Debug || goto CONAN_INSTALL_DEBUG_FAILURE
 "%VENV_DIR%\Scripts\conan.exe" install . --output-folder=out -pr:a %CONAN_PROFILE_NAME% -s:a build_type=RelWithDebInfo || goto CONAN_INSTALL_RELWITHDEBINFO_FAILURE

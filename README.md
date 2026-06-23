@@ -38,6 +38,15 @@ Among other things GammaRay can:
 * Show all installed fonts.
 * Show all available codecs.
 
+## TESCAN 
+ * use branch `vs-conan-build-fixes`
+ * add user env variable called `CONAN_REMOTE_PASSWORD`
+ * add its value `it has same value as in essence or ask DPA`
+ * after initial setup of conan access just execute conan_install_2022.bat
+ * open the project via visual studio and select preset `conan-relwithdebinfo`
+ * after building the project go to menu `build-Install GammaRay`
+ * Now you can use it.
+
 ## Building GammaRay
 
 [See installation notes](INSTALL.md)

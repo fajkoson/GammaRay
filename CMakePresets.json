@@ -20,7 +20,8 @@
             "cacheVariables": {
                 "GAMMARAY_BUILD_DOCS": "OFF",
                 "GAMMARAY_BUILD_KJOBTRACKER": "OFF",
-                "GAMMARAY_MULTI_BUILD": "OFF"
+                "GAMMARAY_MULTI_BUILD": "OFF",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build-${presetName}/install"
             }
         },
         {

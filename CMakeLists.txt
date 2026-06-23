@@ -823,6 +823,52 @@ set(INSTALL_TARGETS_DEFAULT_ARGS
     ${BUNDLE_INSTALL_DIR}
 )
 
+if(WIN32 AND NOT GAMMARAY_PROBE_ONLY_BUILD)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(_qt_dll_suffix "d")
+    else()
+        set(_qt_dll_suffix "")
+    endif()
+
+    if(DEFINED QT_INSTALL_BINS AND QT_INSTALL_BINS)
+        set(_qt_runtime_bin_dir "${QT_INSTALL_BINS}")
+    elseif(DEFINED QT6_INSTALL_PREFIX AND QT6_INSTALL_PREFIX)
+        set(_qt_runtime_bin_dir "${QT6_INSTALL_PREFIX}/bin")
+    else()
+        set(_qt_runtime_bin_dir "")
+    endif()
+
+    if(_qt_runtime_bin_dir)
+        foreach(_qt_dll
+                Qt6Core${_qt_dll_suffix}.dll
+                Qt6Gui${_qt_dll_suffix}.dll
+                Qt6Widgets${_qt_dll_suffix}.dll
+                Qt6Network${_qt_dll_suffix}.dll)
+            install(
+                FILES "${_qt_runtime_bin_dir}/${_qt_dll}"
+                DESTINATION ${BIN_INSTALL_DIR}
+                OPTIONAL
+            )
+        endforeach()
+    endif()
+
+    if(DEFINED QT_INSTALL_PLUGINS AND QT_INSTALL_PLUGINS)
+        set(_qt_plugin_dir "${QT_INSTALL_PLUGINS}")
+    elseif(DEFINED QT6_INSTALL_PREFIX AND QT6_INSTALL_PREFIX)
+        set(_qt_plugin_dir "${QT6_INSTALL_PREFIX}/plugins")
+    else()
+        set(_qt_plugin_dir "")
+    endif()
+
+    if(_qt_plugin_dir)
+        install(
+            DIRECTORY "${_qt_plugin_dir}/platforms"
+            DESTINATION ${BIN_INSTALL_DIR}
+            OPTIONAL
+        )
+    endif()
+endif()
+
 # "inverse" install dirs, to find the base location again
 if(APPLE)
     set(BUNDLE_INSTALL_DIR_PRIVATE "${BUNDLE_INSTALL_DIR}/${BUNDLE_APP_NAME}/Contents/MacOS")
